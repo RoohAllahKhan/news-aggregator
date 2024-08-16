@@ -9,10 +9,17 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
+use Illuminate\Http\JsonResponse;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
+    /**
+     * Handle the user registration.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function register(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
@@ -35,7 +42,14 @@ class AuthController extends Controller
         return response()->json(['token' => $token], 201);
     }
 
-    public function login(Request $request)
+    /**
+     * Handle the user login.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ValidationException
+     */
+    public function login(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'email' => 'required|string|email',
@@ -55,8 +69,14 @@ class AuthController extends Controller
         }
 
         $user = Auth::user();
+        
+        // Creating a token for the authenticated user
         $token = $user->createToken('Personal Access Token')->plainTextToken;
 
-        return response()->json(['token' => $token]);
+        // Returning the user's name and token in the response
+        return response()->json([
+            'userName' => $user->name,
+            'token' => $token,
+        ]);
     }
 }
