@@ -18,7 +18,6 @@ return new class extends Migration
             $table->foreignId('author_id')->nullable()->constrained('authors')->cascadeOnUpdate()->cascadeOnDelete();
             $table->text('title')->nullable()->fulltext();
             $table->text('description')->nullable()->fulltext();
-            $table->text('url')->nullable();
             $table->text('image_url')->nullable();
             $table->timestampTz('published_at');
             $table->timestamps();

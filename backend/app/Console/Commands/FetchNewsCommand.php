@@ -12,7 +12,7 @@ class FetchNewsCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'news:fetch {count=10}';
+    protected $signature = 'news:fetch';
 
     /**
      * The console command description.
@@ -34,9 +34,8 @@ class FetchNewsCommand extends Command
      */
     public function handle()
     {
-        $count = (int) $this->argument('count');
-        $this->info("Fetching $count news articles...");
-        $this->newsService->fetchAndSaveNews($count);
+        $this->info("Fetching news articles...");
+        $this->newsService->fetchAndSaveNews();
         $this->info("News fetching completed.");
     }
 }

@@ -8,15 +8,14 @@ use App\Models\Author;
 use App\Models\Category;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\DB;
 
 class NewsService
 {
-    public function fetchAndSaveNews(int $count): void
+    public function fetchAndSaveNews(): void
     {
-        $guardianData = $this->fetchGuardianNews($count);
-        $nytData = $this->fetchNYTimesNews($count);
-        $newsApiData = $this->fetchNewsApiOrg($count);
+        $guardianData = $this->fetchGuardianNews(1);
+        $nytData = $this->fetchNYTimesNews(1);
+        $newsApiData = $this->fetchNewsApiOrg(1);
         $newsData = array_merge($guardianData, $nytData, $newsApiData);
 
         $this->saveNews($newsData);
@@ -30,7 +29,7 @@ class NewsService
             'to-date' => Carbon::today()->format('Y-m-d'),
             'page' => $page,
             'page-size' => 50,
-            'show-fields' => 'headline'
+            'show-fields' => 'headline,thumbnail'
         ]);
         $data = $response->json('response.results');
         if (empty($data)) {
@@ -60,7 +59,7 @@ class NewsService
     protected function fetchNewsApiOrg(int $page): array | null
     {
         $response = Http::get(config('integrations.news_api_org.api_url'), [
-            'apiKey' => config('integrations.new_api_org.api_key'),
+            'apiKey' => config('integrations.news_api_org.api_key'),
             'from_date' => Carbon::yesterday()->format('Y-m-d'),
             'to_date' => Carbon::today()->format('y-m-d'),
             'page' => $page,
@@ -77,12 +76,14 @@ class NewsService
     protected function formatGuardianResponse(array $data): array
     {
         $formattedData = [];
-        foreach ($data as $newsFeed) {
+        foreach ($data as $newsFeed) {        
             $formattedData[] = [
                 'article' => [
                     'title' => $newsFeed['webTitle'],
                     'description' => $newsFeed['fields']['headline'],
                     'published_at' => Carbon::parse($newsFeed['webPublicationDate']),
+                    'image_url' => $newsFeed['fields']['thumbnail'],
+                    
                 ],
                 'source' => [
                     'name' => 'The Guardian',
@@ -101,14 +102,23 @@ class NewsService
     {
         $formattedData = [];
         foreach ($data as $newsFeed) {
+            $imageUrl = null;
+            $multimedia = $newsFeed['multimedia'];
+            foreach ($multimedia as $media) {
+                if ($media['subtype'] === 'xlarge') {
+                    $imageUrl = 'https://www.nytimes.com/' . $media['url'];
+                    break;
+                }
+            }
             $formattedData[] = [
                 'article' => [
                     'title' => $newsFeed['headline']['main'],
                     'description' => $newsFeed['lead_paragraph'],
                     'published_at' => Carbon::parse($newsFeed['pub_date']),
+                    'image_url' => $imageUrl,
                 ],
                 'source' => [
-                    'name' => $newsFeed['source']
+                    'name' => $newsFeed['source'] ?? ''
                 ],
                 'author' => $newsFeed['byline']['original'] ?
                     ['name' => substr($newsFeed['byline']['original'], 3)] :
@@ -127,7 +137,7 @@ class NewsService
     {
         $formattedData = [];
         foreach ($data as $newsFeed) {
-            if ($data['title'] !== "[Removed]") {
+            if ($newsFeed['title'] !== "[Removed]") {
                 $formattedData[] = [
                     'article' => [
                         'title' => $newsFeed['title'],
