@@ -6,6 +6,7 @@ use App\Models\News;
 use App\Models\Source;
 use App\Models\Author;
 use App\Models\Category;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
 
@@ -16,90 +17,178 @@ class NewsService
         $guardianData = $this->fetchGuardianNews($count);
         $nytData = $this->fetchNYTimesNews($count);
         $newsApiData = $this->fetchNewsApiOrg($count);
-
-        // Merge all news data
         $newsData = array_merge($guardianData, $nytData, $newsApiData);
 
-        DB::transaction(function () use ($newsData): void {
-            foreach ($newsData as $newsItem) {
-                $this->saveNewsItem($newsItem);
-            }
-        });
+        $this->saveNews($newsData);
     }
 
-    protected function fetchGuardianNews(int $count): array
+    protected function fetchGuardianNews(int $page): array | null
     {
         $response = Http::get(config('integrations.guardian.api_url'), [
-            'page-size' => $count,
             'api-key' => config('integrations.guardian.api_key'),
+            'from-date' => Carbon::yesterday()->format('Y-m-d'),
+            'to-date' => Carbon::today()->format('Y-m-d'),
+            'page' => $page,
+            'page-size' => 50,
+            'show-fields' => 'headline'
         ]);
+        $data = $response->json('response.results');
+        if (empty($data)) {
+            return null;
+        }
 
-        $data = $response->json();
         return $this->formatGuardianResponse($data);
     }
 
-    protected function fetchNYTimesNews(int $count): array
+    protected function fetchNYTimesNews(int $page): array | null
     {
         $response = Http::get(config('integrations.new_york_times.api_url'), [
             'api-key' => config('integrations.new_york_times.api_key'),
+            'from-date' => str_replace('-', '', Carbon::yesterday()->format('Y-m-d')),
+            'to-date' => str_replace('-', '', Carbon::today()->format('Y-m-d')),
+            'page' => $page,
+            'sort' => 'newest'
         ]);
+        $data = $response->json('response.docs');
+        if (empty($data)) {
+            return null;
+        }
 
-        $data = $response->json();
         return $this->formatNYTimesResponse($data);
     }
 
-    protected function fetchNewsApiOrg(int $count): array
+    protected function fetchNewsApiOrg(int $page): array | null
     {
         $response = Http::get(config('integrations.news_api_org.api_url'), [
-            'pageSize' => $count,
             'apiKey' => config('integrations.new_api_org.api_key'),
+            'from_date' => Carbon::yesterday()->format('Y-m-d'),
+            'to_date' => Carbon::today()->format('y-m-d'),
+            'page' => $page,
+            'q' => 'a'
         ]);
+        $data = $response->json('articles');
+        if (empty($data)) {
+            return null;
+        }
 
-        $data = $response->json();
         return $this->formatNewsApiOrgResponse($data);
     }
 
     protected function formatGuardianResponse(array $data): array
     {
-        return [];
+        $formattedData = [];
+        foreach ($data as $newsFeed) {
+            $formattedData[] = [
+                'article' => [
+                    'title' => $newsFeed['webTitle'],
+                    'description' => $newsFeed['fields']['headline'],
+                    'published_at' => Carbon::parse($newsFeed['webPublicationDate']),
+                ],
+                'source' => [
+                    'name' => 'The Guardian',
+                ],
+                'author' => null,
+                'category' => [
+                    'name' => $newsFeed['sectionName'],
+                ]
+            ];
+        }
+
+        return $formattedData;
     }
 
     protected function formatNYTimesResponse(array $data): array
     {
-        return [];
+        $formattedData = [];
+        foreach ($data as $newsFeed) {
+            $formattedData[] = [
+                'article' => [
+                    'title' => $newsFeed['headline']['main'],
+                    'description' => $newsFeed['lead_paragraph'],
+                    'published_at' => Carbon::parse($newsFeed['pub_date']),
+                ],
+                'source' => [
+                    'name' => $newsFeed['source']
+                ],
+                'author' => $newsFeed['byline']['original'] ?
+                    ['name' => substr($newsFeed['byline']['original'], 3)] :
+                    null,
+                'category' => [
+                    'name' => $newsFeed['section_name']
+                ]
+                
+            ];
+        }
+
+        return $formattedData;
     }
 
     protected function formatNewsApiOrgResponse(array $data): array
     {
-        return [];
+        $formattedData = [];
+        foreach ($data as $newsFeed) {
+            if ($data['title'] !== "[Removed]") {
+                $formattedData[] = [
+                    'article' => [
+                        'title' => $newsFeed['title'],
+                        'description' => $newsFeed['description'],
+                        'published_at' => Carbon::parse($newsFeed['publishedAt']),
+                        'image_url' => $newsFeed['urlToImage'],
+                    ],
+                    'source' => [
+                        'name' => $newsFeed['source']['name']
+                    ],
+                    'author' => $newsFeed['author'] ? [
+                        'name' => explode(',', $newsFeed['author'])[0] ?? ''
+                    ] : null,
+                    'category' => null
+                ];
+            }
+        }
+
+        return $formattedData;
     }
 
-    protected function saveNewsItem(array $newsItem): void
+    protected function saveNews(array $newsData): void
     {
-        $source = Source::updateOrCreate(
-            ['name' => $newsItem['source_name']],
-            ['url' => $newsItem['source_url']]
-        );
+        $newsSaveData = [];
+        foreach ($newsData as $newsItem) {
+            $source = null;
+            $author = null;
+            $category = null;
+            if ($newsItem['source']) {
+                $source = Source::firstOrCreate(
+                    ['name' => $newsItem['source']['name']]
+                );
+            }
+    
+            if ($newsItem['author']) {
+                $author = Author::firstOrCreate(
+                    ['name' => $newsItem['author']['name']]
+                );
+            }
+    
+            if ($newsItem['category']) {
+                $category = Category::firstOrCreate(
+                    ['name' => $newsItem['category']['name']]
+                );
+            }
 
-        $author = Author::updateOrCreate(
-            ['name' => $newsItem['author_name']]
-        );
+            $newsSaveData[] = array_merge($newsItem['article'], [
+                'source_id' => $source ? $source->id : null,
+                'author_id' => $author ? $author->id : null,
+                'category_id' => $category ? $category->id : null
+            ]);
+        }
 
-        $category = Category::updateOrCreate(
-            ['name' => $newsItem['category_name']]
-        );
-
-        News::updateOrCreate(
-            ['url' => $newsItem['url']],
-            [
-                'title' => $newsItem['title'],
-                'description' => $newsItem['description'],
-                'source_id' => $source->id,
-                'author_id' => $author->id,
-                'category_id' => $category->id,
-                'published_at' => $newsItem['published_at'],
-                'image_url' => $newsItem['image_url'],
-            ]
-        );
+        //Bulk insertion
+        News::upsert($newsSaveData, [
+            'title',
+            'description',
+            'published_at',
+            'source_id',
+            'author_id',
+            'category_id'
+        ]);
     }
 }
