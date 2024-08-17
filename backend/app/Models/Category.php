@@ -18,4 +18,9 @@ class Category extends Model
      * @var array
      */
     protected $guarded = [];
+
+    /**
+     * @var array
+     */
+    protected $visible = ['id', 'name'];
 }
