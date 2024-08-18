@@ -7,6 +7,7 @@ use App\Models\Source;
 use App\Models\Author;
 use App\Models\Category;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Http;
 
 class NewsService
@@ -200,5 +201,43 @@ class NewsService
             'author_id',
             'category_id'
         ]);
+    }
+
+    public function getNews(array $categories, array $sources, array $authors): Collection
+    {
+        $query = News::query();
+
+        if (!empty($categories)) {
+            $query->whereIn('category_id', $categories);
+        }
+
+        if (!empty($sources)) {
+            $query->whereIn('source_id', $sources);
+        }
+
+        if (!empty($authors)) {
+            $query->whereIn('author_id', $authors);
+        }
+
+        return $query->get();
+    }
+
+    public function searchNews(?string $keyword, ?string $fromDate, ?string $toDate): Collection
+    {
+        $query = News::query();
+
+        if (!empty($keyword)) {
+            $query->where('title', 'LIKE', '%' . $keyword . '%');
+        }
+
+        if (!empty($fromDate)) {
+            $query->whereDate('published_at', '>=', $fromDate);
+        }
+
+        if (!empty($toDate)) {
+            $query->whereDate('published_at', '<=', $toDate);
+        }
+
+        return $query->get();
     }
 }
