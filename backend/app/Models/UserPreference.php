@@ -19,6 +19,14 @@ class UserPreference extends Model
      */
     protected $guarded = [];
 
+    protected $fillable = ['user_id', 'categories', 'sources', 'authors'];
+
+    protected $casts = [
+        'categories' => 'array',
+        'sources' => 'array',
+        'authors' => 'array',
+    ];
+
     /**
      * @param string|null $value
      * @return null

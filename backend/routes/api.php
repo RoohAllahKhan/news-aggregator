@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AuthorController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\SourceController;
+use App\Http\Controllers\UserPreferenceController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -24,4 +25,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('sources', [SourceController::class, 'index']);
     Route::get('categories', [CategoryController::class, 'index']);
     Route::get('authors', [AuthorController::class, 'index']);
+    Route::put('user-preference', [UserPreferenceController::class, 'storeOrUpdate']);
+    Route::get('user-preference/{userId}', [UserPreferenceController::class, 'show']);
 });
