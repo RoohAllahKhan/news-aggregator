@@ -219,7 +219,7 @@ class NewsService
             $query->whereIn('author_id', $authors);
         }
 
-        return $query->get();
+        return $query->all();
     }
 
     public function searchNews(?string $keyword, ?string $fromDate, ?string $toDate): Collection

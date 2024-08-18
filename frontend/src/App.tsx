@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-d
 import Navbar from "./components/Navbar";
 import Login from "./components/Login";
 import Register from "./components/Register";
+import NewsFeed from "./components/NewsFeed";
 
 const App: React.FC = () => {
   const isLoggedIn = !!localStorage.getItem("token");
@@ -22,10 +23,13 @@ const App: React.FC = () => {
 
 const Home: React.FC = () => {
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>Welcome to the Homepage!</h1>
-      <p>This is the homepage of your application.</p>
+    <div className="App">
+        <NewsFeed />
     </div>
+    // <div style={{ padding: "20px" }}>
+    //   <h1>Welcome to the Homepage!</h1>
+    //   <p>This is the homepage of your application.</p>
+    // </div>
   );
 };
 
