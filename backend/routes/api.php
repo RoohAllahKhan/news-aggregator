@@ -21,12 +21,14 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::get('news/search', [NewsController::class, 'searchNews']);
+Route::get('news', [NewsController::class, 'fetchNews']);
+Route::get('sources', [SourceController::class, 'index']);
+Route::get('categories', [CategoryController::class, 'index']);
+
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('sources', [SourceController::class, 'index']);
-    Route::get('categories', [CategoryController::class, 'index']);
     Route::get('authors', [AuthorController::class, 'index']);
     Route::put('user-preference', [UserPreferenceController::class, 'storeOrUpdate']);
     Route::get('user-preference/{userId}', [UserPreferenceController::class, 'show']);
-    Route::get('news', [NewsController::class, 'fetchNews']);
-    Route::get('news/search', [NewsController::class, 'searchNews']);
+    Route::get('prefered-news', [NewsController::class, 'fetchPreferedNews']);
 });

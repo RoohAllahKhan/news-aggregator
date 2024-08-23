@@ -203,7 +203,7 @@ class NewsService
         ]);
     }
 
-    public function getNews(array $categories, array $sources, array $authors): Collection
+    public function getPreferedNews(array $categories, array $sources, array $authors): Collection
     {
         $query = News::query();
 
@@ -218,25 +218,36 @@ class NewsService
         if (!empty($authors)) {
             $query->whereIn('author_id', $authors);
         }
+        $query->orderBy('published_at', 'DESC');
 
-        return $query->all();
+        return $query->get();
     }
 
-    public function searchNews(?string $keyword, ?string $fromDate, ?string $toDate): Collection
+    public function getNews(): Collection
+    {
+        return News::query()->orderBy('published_at', 'DESC')->get();
+    }
+
+    public function searchNews(?string $keyword, ?string $fromDate, ?string $toDate, ?array $category, ?array $source): Collection
     {
         $query = News::query();
 
         if (!empty($keyword)) {
             $query->where('title', 'LIKE', '%' . $keyword . '%');
         }
-
         if (!empty($fromDate)) {
             $query->whereDate('published_at', '>=', $fromDate);
         }
-
         if (!empty($toDate)) {
             $query->whereDate('published_at', '<=', $toDate);
         }
+        if (!empty($category)) {
+            $query->whereIn('category_id', $category);
+        }
+        if (!empty($source)) {
+            $query->whereIn('source_id', $source);
+        }
+        $query->orderBy('published_at', 'DESC');
 
         return $query->get();
     }

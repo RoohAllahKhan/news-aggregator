@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { getApi } from '../services/api';
+import { getApi, getApiWithoutToken } from '../services/api';
 import {
     Card, CardContent, CardMedia, Grid, Typography, Container
 } from '@mui/material';
-import axios from "axios";
+import { format } from 'date-fns';
 
 interface NewsArticle {
     id: number;
@@ -18,10 +18,9 @@ const NewsFeed: React.FC = () => {
 
     useEffect(() => {
         const fetchNews = async () => {
-            const response = await getApi('http://localhost:8000/api/news');
-            console.log(response);
+            const token = localStorage.getItem('token');
+            const response = token ? await getApi('http://localhost:8000/api/prefered-news') : await getApiWithoutToken('http://localhost:8000/api/news');
             const data: NewsArticle[] = await response;
-            // const data: NewsArticle[] = [];
             setNews(data);
         };
 
@@ -34,9 +33,8 @@ const NewsFeed: React.FC = () => {
     const latestNews = news.slice(1);
 
     return (
-        <Container maxWidth="lg">
+        <Container maxWidth="lg" sx={{ mt: 4 }}>
             <Grid container spacing={4}>
-                {/* Main News Section */}
                 <Grid item xs={12}>
                     <Card>
                         <Grid container>
@@ -57,13 +55,16 @@ const NewsFeed: React.FC = () => {
                                     <Typography variant="body1" color="textSecondary">
                                         {mainNews.description}
                                     </Typography>
+                                    <hr></hr>
+                                    <Typography variant="body2" color="text.secondary">
+                                    Published at: {format(new Date(mainNews.published_at), 'MMM d, yyyy h:mm a')}
+                                    </Typography>
                                 </CardContent>
                             </Grid>
                         </Grid>
                     </Card>
                 </Grid>
 
-                {/* Latest News Section */}
                 {latestNews.map((article) => (
                     <Grid item key={article.id} xs={12} sm={6} md={4}>
                         <Card>
@@ -80,6 +81,10 @@ const NewsFeed: React.FC = () => {
                                 </Typography>
                                 <Typography variant="body2" color="textSecondary">
                                     {article.description}
+                                </Typography>
+                                <hr></hr>
+                                <Typography variant="body2" color="text.secondary">
+                                    Published at: {format(new Date(article.published_at), 'MMM d, yyyy h:mm a')}
                                 </Typography>
                             </CardContent>
                         </Card>
