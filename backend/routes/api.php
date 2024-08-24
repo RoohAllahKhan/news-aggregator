@@ -29,6 +29,6 @@ Route::get('categories', [CategoryController::class, 'index']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('authors', [AuthorController::class, 'index']);
     Route::put('user-preference', [UserPreferenceController::class, 'storeOrUpdate']);
-    Route::get('user-preference/{userId}', [UserPreferenceController::class, 'show']);
+    Route::get('user-preference', [UserPreferenceController::class, 'show']);
     Route::get('prefered-news', [NewsController::class, 'fetchPreferedNews']);
 });

@@ -26,6 +26,7 @@ const Navbar: React.FC = () => {
 
   const handleLogout = () => {
     logout();
+    navigate("/");
     window.location.reload();
     handleClose();
   };
@@ -112,10 +113,10 @@ const Navbar: React.FC = () => {
               </>
             ) : (
               <>
-                <Typography variant="h6" sx={{ display: "inline", marginRight: 2 }}>
+                <Typography variant="h6" sx={{ display: "inline", marginRight: 2, marginLeft: 2 }}>
                   Hello, {userName}
                 </Typography>
-                <Button color="inherit" component={Link} to="/user/preferences">
+                <Button color="inherit" component={Link} to="preferences">
                   Preferences
                 </Button>
                 <Button color="inherit" onClick={handleLogout}>
