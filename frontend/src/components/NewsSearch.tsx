@@ -65,7 +65,7 @@ const NewsSearch: React.FC = () => {
         }
         try {
             const response = await getApiWithoutToken('http://localhost:8000/api/news/search', queryParams);
-            setNews(response );
+            setNews(response.data);
         } catch (err) {
             setError('Error fetching news');
         }

@@ -7,11 +7,14 @@ use App\Models\Source;
 use App\Models\Author;
 use App\Models\Category;
 use Carbon\Carbon;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Http;
 
 class NewsService
 {
+    const PAGE_LIMIT = 21;
+
     public function fetchAndSaveNews(): void
     {
         $guardianData = $this->fetchGuardianNews(1);
@@ -203,7 +206,7 @@ class NewsService
         ]);
     }
 
-    public function getPreferedNews(array $categories, array $sources, array $authors): Collection
+    public function getPreferedNews(array $categories, array $sources, array $authors): LengthAwarePaginator
     {
         $query = News::query();
 
@@ -220,15 +223,15 @@ class NewsService
         }
         $query->orderBy('published_at', 'DESC');
 
-        return $query->get();
+        return $query->paginate(self::PAGE_LIMIT);
     }
 
-    public function getNews(): Collection
+    public function getNews(): LengthAwarePaginator
     {
-        return News::query()->orderBy('published_at', 'DESC')->get();
+        return News::query()->orderBy('published_at', 'DESC')->paginate(self::PAGE_LIMIT);
     }
 
-    public function searchNews(?string $keyword, ?string $fromDate, ?string $toDate, ?array $category, ?array $source): Collection
+    public function searchNews(?string $keyword, ?string $fromDate, ?string $toDate, ?array $category, ?array $source): LengthAwarePaginator
     {
         $query = News::query();
 
@@ -249,6 +252,6 @@ class NewsService
         }
         $query->orderBy('published_at', 'DESC');
 
-        return $query->get();
+        return $query->paginate(self::PAGE_LIMIT);
     }
 }

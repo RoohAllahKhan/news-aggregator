@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { getApi, getApiWithoutToken } from '../services/api';
 import {
-    Card, CardContent, CardMedia, Grid, Typography, Container
+    Card, CardContent, CardMedia, Grid, Typography, Container,
+    Box,
+    Pagination
 } from '@mui/material';
 import { format } from 'date-fns';
 
@@ -15,17 +17,27 @@ interface NewsArticle {
 
 const NewsFeed: React.FC = () => {
     const [news, setNews] = useState<NewsArticle[]>([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
 
     useEffect(() => {
-        const fetchNews = async () => {
+        const fetchNews = async (page: number) => {
             const token = localStorage.getItem('token');
-            const response = token ? await getApi('http://localhost:8000/api/prefered-news') : await getApiWithoutToken('http://localhost:8000/api/news');
-            const data: NewsArticle[] = await response;
-            setNews(data);
+            const response = token 
+                ? await getApi(`http://localhost:8000/api/prefered-news?page=${page}`) 
+                : await getApiWithoutToken(`http://localhost:8000/api/news?page=${page}`);
+
+            setNews(response.data);
+            setCurrentPage(response.current_page);
+            setTotalPages(response.last_page);
         };
 
-        fetchNews();
-    }, []);
+        fetchNews(currentPage);
+    }, [currentPage]);
+
+    const handlePageChange = (event: React.ChangeEvent<unknown>, newPage: number) => {
+        setCurrentPage(newPage);
+    };
 
     if (!news.length) return <div>Loading...</div>;
 
@@ -91,6 +103,15 @@ const NewsFeed: React.FC = () => {
                     </Grid>
                 ))}
             </Grid>
+
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, mb:6 }}>
+                <Pagination
+                    count={totalPages}
+                    page={currentPage}
+                    onChange={handlePageChange}
+                    color="primary"
+                />
+            </Box>
         </Container>
     );
 };
