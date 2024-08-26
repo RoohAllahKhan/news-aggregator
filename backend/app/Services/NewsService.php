@@ -80,13 +80,13 @@ class NewsService
     protected function formatGuardianResponse(array $data): array
     {
         $formattedData = [];
-        foreach ($data as $newsFeed) {        
+        foreach ($data as $newsFeed) {
             $formattedData[] = [
                 'article' => [
                     'title' => $newsFeed['webTitle'],
                     'description' => $newsFeed['fields']['headline'],
                     'published_at' => Carbon::parse($newsFeed['webPublicationDate']),
-                    'image_url' => $newsFeed['fields']['thumbnail'],
+                    'image_url' => $newsFeed['fields']['thumbnail'] ?? "",
                     
                 ],
                 'source' => [
