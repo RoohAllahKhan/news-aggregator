@@ -1,10 +1,12 @@
 import React from "react";
 import { AppBar, Toolbar, Typography, Button, Box, IconButton, Menu, MenuItem } from "@mui/material";
+import SearchIcon from '@mui/icons-material/Search';
 import { Link, useNavigate } from "react-router-dom";
 import MenuIcon from "@mui/icons-material/Menu";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 import { useAuth } from "../AuthContext";
+
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
@@ -24,15 +26,22 @@ const Navbar: React.FC = () => {
 
   const handleLogout = () => {
     logout();
-    navigate("/login");
+    navigate("/");
+    window.location.reload();
     handleClose();
+  };
+
+  const handleSearchClick = () => {
+    navigate("/search");
   };
 
   return (
     <AppBar position="static">
       <Toolbar>
         <Typography variant="h6" sx={{ flexGrow: 1 }}>
-          News Aggregator
+          <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
+            News Aggregator
+          </Link>
         </Typography>
         {isMobile ? (
           <>
@@ -54,6 +63,18 @@ const Navbar: React.FC = () => {
               open={Boolean(anchorEl)}
               onClose={handleClose}
             >
+              <>
+                (<MenuItem>
+                  <IconButton
+                        edge="end"
+                        color="inherit"
+                        aria-label="search"
+                        onClick={handleSearchClick}
+                    >
+                        <SearchIcon />
+                    </IconButton>
+                </MenuItem>)
+              </>
               {!isLoggedIn ? (
                 <>
                   <MenuItem component={Link} to="/login" onClick={handleClose}>
@@ -73,6 +94,14 @@ const Navbar: React.FC = () => {
           </>
         ) : (
           <Box>
+              <IconButton
+                    edge="end"
+                    color="inherit"
+                    aria-label="search"
+                    onClick={handleSearchClick}
+                >
+                    <SearchIcon />
+                </IconButton>
             {!isLoggedIn ? (
               <>
                 <Button color="inherit" component={Link} to="/login">
@@ -84,9 +113,12 @@ const Navbar: React.FC = () => {
               </>
             ) : (
               <>
-                <Typography variant="h6" sx={{ display: "inline", marginRight: 2 }}>
+                <Typography variant="h6" sx={{ display: "inline", marginRight: 2, marginLeft: 2 }}>
                   Hello, {userName}
                 </Typography>
+                <Button color="inherit" component={Link} to="preferences">
+                  Preferences
+                </Button>
                 <Button color="inherit" onClick={handleLogout}>
                   Logout
                 </Button>

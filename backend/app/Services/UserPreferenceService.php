@@ -2,6 +2,7 @@
 namespace App\Services;
 
 use App\Models\UserPreference;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
@@ -17,7 +18,6 @@ class UserPreferenceService
     public function createOrUpdate(array $data): UserPreference
     {
         $validator = Validator::make($data, [
-            'user_id' => 'required|exists:users,id',
             'categories' => 'array',
             'categories.*' => 'integer|exists:categories,id',
             'sources' => 'array',
@@ -30,8 +30,13 @@ class UserPreferenceService
             throw new ValidationException($validator);
         }
 
+        $userId = Auth::id();
+        if (!$userId) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        
         return UserPreference::updateOrCreate(
-            ['user_id' => $data['user_id']],
+            ['user_id' => $userId],
             [
                 'categories' => $data['categories'],
                 'sources' => $data['sources'],

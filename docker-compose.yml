@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:80"
+    # volumes:
+    #   - ./frontend:/var/www/html/frontend
+    # working_dir: /var/www/html/frontend
+    # command: sh -c "npm install && npm run build && HTTPS=true npm start"
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: ./backend
+    volumes:
+      - ./backend:/var/www
+    networks:
+      - app-network
+    ports:
+      - "8000:8000"  
+    command: php artisan serve --host=0.0.0.0 --port=8000
+
+  db:
+    image: mysql:8
+    volumes:
+      - dbdata:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: news_aggregator
+      MYSQL_ROOT_PASSWORD: 
+      MYSQL_ALLOW_EMPTY_PASSWORD: 1
+    networks:
+      - app-network
+    ports:
+      - "3307:3306" 
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./backend:/var/www
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  dbdata:

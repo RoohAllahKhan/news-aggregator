@@ -6,6 +6,7 @@ use App\Services\UserPreferenceService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class UserPreferenceController extends Controller
 {
@@ -29,9 +30,13 @@ class UserPreferenceController extends Controller
     }
 
     // To retrieve a user preference by user id
-    public function show(Request $request, int $userId): JsonResponse
+    public function show(Request $request): JsonResponse
     {
         try {
+            $userId = Auth::id();
+            if (!$userId) {
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
             $userPreference = $this->userPreferenceService->getByUserId($userId);
 
             return response()->json($userPreference);

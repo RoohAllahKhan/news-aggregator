@@ -7,11 +7,14 @@ use App\Models\Source;
 use App\Models\Author;
 use App\Models\Category;
 use Carbon\Carbon;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Http;
 
 class NewsService
 {
+    const PAGE_LIMIT = 21;
+
     public function fetchAndSaveNews(): void
     {
         $guardianData = $this->fetchGuardianNews(1);
@@ -77,13 +80,13 @@ class NewsService
     protected function formatGuardianResponse(array $data): array
     {
         $formattedData = [];
-        foreach ($data as $newsFeed) {        
+        foreach ($data as $newsFeed) {
             $formattedData[] = [
                 'article' => [
                     'title' => $newsFeed['webTitle'],
                     'description' => $newsFeed['fields']['headline'],
                     'published_at' => Carbon::parse($newsFeed['webPublicationDate']),
-                    'image_url' => $newsFeed['fields']['thumbnail'],
+                    'image_url' => $newsFeed['fields']['thumbnail'] ?? "",
                     
                 ],
                 'source' => [
@@ -203,7 +206,7 @@ class NewsService
         ]);
     }
 
-    public function getNews(array $categories, array $sources, array $authors): Collection
+    public function getPreferedNews(array $categories, array $sources, array $authors): LengthAwarePaginator
     {
         $query = News::query();
 
@@ -218,26 +221,37 @@ class NewsService
         if (!empty($authors)) {
             $query->whereIn('author_id', $authors);
         }
+        $query->orderBy('published_at', 'DESC');
 
-        return $query->get();
+        return $query->paginate(self::PAGE_LIMIT);
     }
 
-    public function searchNews(?string $keyword, ?string $fromDate, ?string $toDate): Collection
+    public function getNews(): LengthAwarePaginator
+    {
+        return News::query()->orderBy('published_at', 'DESC')->paginate(self::PAGE_LIMIT);
+    }
+
+    public function searchNews(?string $keyword, ?string $fromDate, ?string $toDate, ?array $category, ?array $source): LengthAwarePaginator
     {
         $query = News::query();
 
         if (!empty($keyword)) {
             $query->where('title', 'LIKE', '%' . $keyword . '%');
         }
-
         if (!empty($fromDate)) {
             $query->whereDate('published_at', '>=', $fromDate);
         }
-
         if (!empty($toDate)) {
             $query->whereDate('published_at', '<=', $toDate);
         }
+        if (!empty($category)) {
+            $query->whereIn('category_id', $category);
+        }
+        if (!empty($source)) {
+            $query->whereIn('source_id', $source);
+        }
+        $query->orderBy('published_at', 'DESC');
 
-        return $query->get();
+        return $query->paginate(self::PAGE_LIMIT);
     }
 }

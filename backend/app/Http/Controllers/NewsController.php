@@ -20,8 +20,15 @@ class NewsController extends Controller
         $this->newsService = $newsService;
     }
     
-    // to get news based on user preferences if it exists
     public function fetchNews(Request $request): JsonResponse
+    {
+        $news = $this->newsService->getNews();
+
+        return response()->json($news);
+    }
+
+    // to get news based on user preferences if it exists
+    public function fetchPreferedNews(Request $request): JsonResponse
     {
         try {
             $userId = Auth::id();
@@ -34,7 +41,7 @@ class NewsController extends Controller
             $sources = $preferences->sources->pluck('id')->toArray() ?? [];
             $authors = $preferences->authors->pluck('id')->toArray() ?? [];
 
-            $news = $this->newsService->getNews($categories, $sources, $authors);
+            $news = $this->newsService->getPreferedNews($categories, $sources, $authors);
 
             return response()->json($news);
         } catch (ModelNotFoundException $exception) {
@@ -48,8 +55,10 @@ class NewsController extends Controller
         $keyword = $request->query('keyword');
         $fromDate = $request->query('from_date');
         $toDate = $request->query('to_date');
+        $category = $request->query('category');
+        $source = $request->query('source');
 
-        $articles = $this->newsService->searchNews($keyword, $fromDate, $toDate);
+        $articles = $this->newsService->searchNews($keyword, $fromDate, $toDate, $category, $source);
 
         return response()->json($articles);
     }
